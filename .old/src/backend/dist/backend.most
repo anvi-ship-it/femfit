@@ -1,0 +1,94 @@
+// Version: 1.0.0
+type DailyLog__681934979 =
+  {
+    date : Text;
+    mealsLogged : [LoggedMeal__735087044];
+    waterMl : Nat;
+    weightKg : ?Float;
+    workoutDone : Bool;
+    workoutTimestamp : ?Timestamp__301639476
+  };
+type Data__80296667<K, V> =
+  {var count : Nat__1040412405; kvs : [var ?(K, V)]};
+type DietaryPreference__165841172 =
+  {#dairyFree; #glutenFree; #none; #vegan; #vegetarian};
+type FitnessGoal__813231237 = {#maintenance; #muscleGain; #weightLoss};
+type FitnessLevel__976077356 = {#advanced; #beginner; #intermediate};
+type HealthCondition__356835314 =
+  {
+    #anemia;
+    #diabetes;
+    #heartCondition;
+    #hormoneImbalance;
+    #hypertension;
+    #none;
+    #pcod;
+    #pcos;
+    #thyroidDisorder
+  };
+type Internal__41346355<K, V> =
+  {children : [var ?Node__1000929467<K, V>]; data : Data__80296667<K, V>};
+type Leaf__712614010<K, V> = {data : Data__80296667<K, V>};
+type LoggedMeal__735087044 =
+  {mealName : Text; timestamp : Timestamp__301639476};
+type Map__222667396<K, V> = Map__912772452<K, V>;
+type Map__709709801<K, V> =
+  {var root : Node__1000929467<K, V>; var size : Nat__1040412405};
+type Map__912772452<K, V> = Map__709709801<K, V>;
+type Nat__1040412405 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__1000929467<K, V> =
+  {#internal : Internal__41346355<K, V>; #leaf : Leaf__712614010<K, V>};
+type OnboardingProfile__840067944 =
+  {
+    age : Nat;
+    allergies : [Text];
+    cycleLengthDays : Nat;
+    cycleStartDate : Timestamp__301639476;
+    dietPrefs : [DietaryPreference__165841172];
+    displayName : Text;
+    fitnessGoal : FitnessGoal__813231237;
+    fitnessLevel : FitnessLevel__976077356;
+    healthConditions : ?[HealthCondition__356835314];
+    heightCm : Nat;
+    periodDurationDays : ?Nat;
+    weightKg : Float
+  };
+type StripeConfiguration__87721349 =
+  {allowedCountries : [Text]; secretKey : Text};
+type SubscriptionStatus__273147603 = {#active; #cancelled; #expired};
+type SubscriptionTier__75232000 = {#freeTrial; #monthly; #premium; #weekly};
+type Subscription__929711557 =
+  {
+    renewalDate : ?Timestamp__301639476;
+    startDate : Timestamp__301639476;
+    status : SubscriptionStatus__273147603;
+    stripeSessionId : ?Text;
+    tier : SubscriptionTier__75232000;
+    trialEndsAt : Timestamp__301639476
+  };
+type Timestamp__301639476 = Int;
+type UserRole__1073662873 = {#admin; #guest; #user};
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__222667396<Principal, UserRole__1073662873>
+    };
+  stable dailyLogs :
+    {
+      var root : Node__1000929467<Text, DailyLog__681934979>;
+      var size : Nat__1040412405
+    };
+  stable profiles :
+    {
+      var root : Node__1000929467<Principal, OnboardingProfile__840067944>;
+      var size : Nat__1040412405
+    };
+  stable var stripeConfig : ?StripeConfiguration__87721349;
+  stable subscriptions :
+    {
+      var root : Node__1000929467<Principal, Subscription__929711557>;
+      var size : Nat__1040412405
+    }
+};

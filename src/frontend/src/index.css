@@ -1,0 +1,283 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: "Fraunces";
+    --font-body: "Figtree";
+    --font-mono: "JetBrains Mono";
+    --radius: 0.625rem;
+
+    --background: 0.98 0.008 70;
+    --foreground: 0.18 0.015 20;
+    --card: 1.0 0.004 70;
+    --card-foreground: 0.18 0.015 20;
+    --popover: 1.0 0.004 70;
+    --popover-foreground: 0.18 0.015 20;
+
+    --primary: 0.48 0.14 10;
+    --primary-foreground: 0.98 0.005 10;
+
+    --secondary: 0.58 0.12 155;
+    --secondary-foreground: 0.18 0.015 155;
+    --muted: 0.92 0.01 70;
+    --muted-foreground: 0.52 0.01 70;
+
+    --accent: 0.65 0.12 40;
+    --accent-foreground: 0.98 0.005 40;
+
+    --destructive: 0.52 0.18 25;
+    --destructive-foreground: 0.98 0.005 25;
+
+    --border: 0.88 0.01 70;
+    --input: 0.88 0.01 70;
+    --ring: 0.48 0.14 10;
+
+    --chart-1: 0.48 0.14 10;
+    --chart-2: 0.58 0.12 155;
+    --chart-3: 0.65 0.12 40;
+    --chart-4: 0.52 0.18 25;
+    --chart-5: 0.72 0.15 85;
+
+    --sidebar: 1.0 0.004 70;
+    --sidebar-foreground: 0.18 0.015 20;
+    --sidebar-primary: 0.48 0.14 10;
+    --sidebar-primary-foreground: 0.98 0.005 10;
+    --sidebar-accent: 0.92 0.01 70;
+    --sidebar-accent-foreground: 0.35 0.01 70;
+    --sidebar-border: 0.88 0.01 70;
+    --sidebar-ring: 0.48 0.14 10;
+  }
+
+  .dark {
+    --background: 0.14 0.015 70;
+    --foreground: 0.92 0.01 70;
+    --card: 0.18 0.018 70;
+    --card-foreground: 0.92 0.01 70;
+    --popover: 0.22 0.02 70;
+    --popover-foreground: 0.92 0.01 70;
+
+    --primary: 0.72 0.12 10;
+    --primary-foreground: 0.98 0.005 10;
+
+    --secondary: 0.62 0.12 155;
+    --secondary-foreground: 0.82 0.01 155;
+    --muted: 0.22 0.02 70;
+    --muted-foreground: 0.55 0.01 70;
+
+    --accent: 0.68 0.11 40;
+    --accent-foreground: 0.14 0.015 40;
+
+    --destructive: 0.62 0.16 25;
+    --destructive-foreground: 0.92 0.01 25;
+
+    --border: 0.28 0.02 70;
+    --input: 0.28 0.02 70;
+    --ring: 0.72 0.12 10;
+
+    --chart-1: 0.72 0.12 10;
+    --chart-2: 0.62 0.12 155;
+    --chart-3: 0.68 0.11 40;
+    --chart-4: 0.62 0.16 25;
+    --chart-5: 0.75 0.14 85;
+
+    --sidebar: 0.18 0.018 70;
+    --sidebar-foreground: 0.92 0.01 70;
+    --sidebar-primary: 0.72 0.12 10;
+    --sidebar-primary-foreground: 0.98 0.005 10;
+    --sidebar-accent: 0.22 0.02 70;
+    --sidebar-accent-foreground: 0.82 0.01 70;
+    --sidebar-border: 0.28 0.02 70;
+    --sidebar-ring: 0.72 0.12 10;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Exercise Animation Keyframes — used by ExerciseAnimationPanel
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Squats: torso bobs down and up */
+@keyframes squat {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  40% {
+    transform: translateY(10px) scaleY(0.82);
+  }
+  60% {
+    transform: translateY(10px) scaleY(0.82);
+  }
+}
+
+/* Plank: subtle vertical pulse — hold & breathe */
+@keyframes plank-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  45% {
+    transform: translateY(-3px) scaleY(1.04);
+  }
+  80% {
+    transform: translateY(1px) scaleY(0.97);
+  }
+}
+
+/* Lunge: slight forward-back rock */
+@keyframes lunge {
+  0%,
+  100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  35% {
+    transform: rotate(-4deg) translateX(-3px);
+  }
+  70% {
+    transform: rotate(4deg) translateX(3px);
+  }
+}
+
+/* Jumping jacks arms: spread wide then close */
+@keyframes jj-arms {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(35deg);
+  }
+}
+
+/* Jumping jacks legs */
+@keyframes jj-legs {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(12deg);
+  }
+}
+
+/* Push-up: body rises and lowers */
+@keyframes pushup {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  65% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Stretch: gentle side sway */
+@keyframes stretch-sway {
+  0%,
+  100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  30% {
+    transform: rotate(-5deg) translateX(-2px);
+  }
+  70% {
+    transform: rotate(5deg) translateX(2px);
+  }
+}
+
+@layer utilities {
+  .animate-squat {
+    animation: squat 1.8s ease-in-out infinite;
+    transform-origin: center top;
+  }
+  .animate-plank {
+    animation: plank-pulse 2.4s ease-in-out infinite;
+    transform-origin: center center;
+  }
+  .animate-lunge {
+    animation: lunge 1.6s ease-in-out infinite;
+    transform-origin: top center;
+  }
+  .animate-jumping-jack-arms {
+    animation: jj-arms 1s ease-in-out infinite alternate;
+    transform-origin: 50px 26px;
+  }
+  .animate-jumping-jack-legs {
+    animation: jj-legs 1s ease-in-out infinite alternate;
+    transform-origin: 50px 43px;
+  }
+  .animate-pushup {
+    animation: pushup 2s ease-in-out infinite;
+  }
+  .animate-stretch {
+    animation: stretch-sway 2.6s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-squat,
+    .animate-plank,
+    .animate-lunge,
+    .animate-jumping-jack-arms,
+    .animate-jumping-jack-legs,
+    .animate-pushup,
+    .animate-stretch {
+      animation: none;
+    }
+  }
+
+  .transition-400 {
+    transition-duration: 400ms;
+  }
+}
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/assets/fonts/Fraunces.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("/assets/fonts/Figtree.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/assets/fonts/JetBrainsMono.woff2") format("woff2");
+  font-display: swap;
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .shadow-warm {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-warm-md {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .shadow-subtle {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 0.5px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}

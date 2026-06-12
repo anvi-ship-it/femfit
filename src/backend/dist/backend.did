@@ -1,0 +1,217 @@
+type http_request_result = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type http_header = 
+ record {
+   name: text;
+   value: text;
+ };
+type WorkoutTemplate = 
+ record {
+   durationMin: nat;
+   exercises: vec Exercise;
+   goal: FitnessGoal;
+   id: text;
+   phase: CyclePhase;
+   title: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type TransformationOutput = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type TransformationInput = 
+ record {
+   context: blob;
+   response: http_request_result;
+ };
+type Timestamp = int;
+type SubscriptionTier = 
+ variant {
+   freeTrial;
+   monthly;
+   premium;
+   weekly;
+ };
+type SubscriptionStatus = 
+ variant {
+   active;
+   cancelled;
+   expired;
+ };
+type Subscription = 
+ record {
+   renewalDate: opt Timestamp;
+   startDate: Timestamp;
+   status: SubscriptionStatus;
+   stripeSessionId: opt text;
+   tier: SubscriptionTier;
+   trialEndsAt: Timestamp;
+ };
+type StripeSessionStatus = 
+ variant {
+   completed: record {
+                response: text;
+                userPrincipal: opt text;
+              };
+   failed: record {error: text;};
+ };
+type StripeConfiguration = 
+ record {
+   allowedCountries: vec text;
+   secretKey: text;
+ };
+type ShoppingItem = 
+ record {
+   currency: text;
+   priceInCents: nat;
+   productDescription: text;
+   productName: text;
+   quantity: nat;
+ };
+type OnboardingProfile = 
+ record {
+   age: nat;
+   allergies: vec text;
+   cycleLengthDays: nat;
+   cycleStartDate: Timestamp;
+   dietPrefs: vec DietaryPreference;
+   displayName: text;
+   fitnessGoal: FitnessGoal;
+   fitnessLevel: FitnessLevel;
+   healthConditions: opt vec HealthCondition;
+   heightCm: nat;
+   periodDurationDays: opt nat;
+   weightKg: float64;
+ };
+type MealTemplate = 
+ record {
+   calories: nat;
+   dietPref: DietaryPreference;
+   id: text;
+   meals: vec MealItem;
+   phase: CyclePhase;
+   title: text;
+ };
+type MealItem = 
+ record {
+   name: text;
+   notes: text;
+   portion: text;
+ };
+type LoggedMeal = 
+ record {
+   mealName: text;
+   timestamp: Timestamp;
+ };
+type HealthCondition = 
+ variant {
+   anemia;
+   diabetes;
+   heartCondition;
+   hormoneImbalance;
+   hypertension;
+   none;
+   pcod;
+   pcos;
+   thyroidDisorder;
+ };
+type FitnessLevel = 
+ variant {
+   advanced;
+   beginner;
+   intermediate;
+ };
+type FitnessGoal = 
+ variant {
+   maintenance;
+   muscleGain;
+   weightLoss;
+ };
+type Exercise = 
+ record {
+   name: text;
+   notes: text;
+   reps: text;
+   sets: nat;
+ };
+type DietaryPreference = 
+ variant {
+   dairyFree;
+   glutenFree;
+   none;
+   vegan;
+   vegetarian;
+ };
+type DailyLog = 
+ record {
+   date: text;
+   mealsLogged: vec LoggedMeal;
+   waterMl: nat;
+   weightKg: opt float64;
+   workoutDone: bool;
+   workoutTimestamp: opt Timestamp;
+ };
+type CyclePhase = 
+ variant {
+   follicular;
+   luteal;
+   menstrual;
+   ovulatory;
+ };
+type CycleInfo = 
+ record {
+   currentPhase: CyclePhase;
+   cycleTip: text;
+   dayOfCycle: nat;
+   phaseLengthDays: nat;
+   phaseStartDay: nat;
+ };
+type CycleEntry = 
+ record {
+   lengthDays: nat;
+   startDate: Timestamp;
+ };
+service : {
+  _initializeAccessControl: () -> ();
+  activateSubscription: (sessionId: text, tier: SubscriptionTier) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  cancelSubscription: () -> ();
+  createCheckoutSession: (items: vec ShoppingItem, successUrl: text,
+   cancelUrl: text) -> (text);
+  /// Create a Stripe checkout session for a specific subscription tier.
+  createSubscriptionCheckout: (tier: SubscriptionTier, successUrl: text,
+   cancelUrl: text) -> (text);
+  getCallerUserRole: () -> (UserRole) query;
+  getCycleHistory: () -> (vec CycleEntry) query;
+  getCycleInfo: () -> (opt CycleInfo) query;
+  getDailyLog: (date: text) -> (DailyLog) query;
+  getOnboardingProfile: () -> (opt OnboardingProfile) query;
+  getStripeSessionStatus: (sessionId: text) -> (StripeSessionStatus);
+  getSubscription: () -> (opt Subscription) query;
+  getTodaysMealPlan: () -> (opt MealTemplate) query;
+  getTodaysWorkout: () -> (opt WorkoutTemplate) query;
+  grantDummySubscription: () -> (Subscription);
+  initFreeTrial: () -> ();
+  isCallerAdmin: () -> (bool) query;
+  isStripeConfigured: () -> (bool) query;
+  logMeal: (date: text, mealName: text) -> ();
+  logWater: (date: text, ml: nat) -> ();
+  logWeight: (date: text, weightKg: float64) -> ();
+  logWorkoutComplete: (date: text) -> ();
+  saveOnboardingProfile: (profile: OnboardingProfile) -> ();
+  setStripeConfiguration: (config: StripeConfiguration) -> ();
+  transform: (input: TransformationInput) -> (TransformationOutput) query;
+  updateCycleStartDate: (newStartDateNs: int) -> ();
+  updateOnboardingProfile: (profile: OnboardingProfile) -> ();
+}

@@ -1,0 +1,23 @@
+{
+  "overview": "A subscription-based women's fitness and nutrition platform delivering personalized workout and meal plan templates tailored to each user's body metrics, fitness goals, and menstrual cycle phase. Features onboarding, cycle tracking, a daily dashboard, progress logging, and Stripe-powered subscription management.",
+  "features": [
+    "Guided onboarding collecting age, weight, height, fitness level, goals, and dietary preferences",
+    "Menstrual cycle tracking with auto phase calculation from start date and cycle length",
+    "Daily dashboard with cycle phase display, workout templates, and meal plan templates",
+    "Water intake tracking and workout/meal completion logging",
+    "Profile editing with instant plan template refresh",
+    "Subscription management with 7-day free trial and Stripe-powered weekly, monthly, and premium tiers",
+    "Responsive mobile-first design with soft, female-centric color palette"
+  ],
+  "category": "health-fitness",
+  "tags": [
+    "women-s-health",
+    "fitness",
+    "nutrition",
+    "menstrual-cycle",
+    "subscription",
+    "personalized-plans",
+    "wellness"
+  ],
+  "last_updated": "2026-04-23T05:47:09.230Z"
+}
