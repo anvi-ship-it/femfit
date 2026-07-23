@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useOnboardingProfile } from "../hooks/use-backend";
 
 export default function LoginPage() {
-  const { isAuthenticated, isInitializing, login } = useInternetIdentity();
+  const { isAuthenticated, isInitializing } = useInternetIdentity();
   const navigate = useNavigate();
   const { data: profile, isLoading: isProfileLoading } = useOnboardingProfile();
 
@@ -41,9 +41,8 @@ export default function LoginPage() {
   };
 
   const handleOtpVerify = () => {
-    if (otp.length < 4) return;
-    // TODO: verify OTP and resolve identity, then call login()
-    login();
+    if (otp.length < 6) return;
+    // TODO: verify OTP with SMS provider, then establish session
   };
 
   return (
@@ -201,7 +200,6 @@ export default function LoginPage() {
               {/* Google */}
               <button
                 type="button"
-                onClick={login}
                 data-ocid="login.google_button"
                 className="flex items-center justify-center gap-2 border border-border bg-card rounded-xl py-3 px-4 text-sm font-body font-medium text-foreground hover:bg-muted/40 hover:border-primary/30 transition-all duration-200 active:scale-[0.98]"
               >
@@ -230,7 +228,6 @@ export default function LoginPage() {
               {/* Apple */}
               <button
                 type="button"
-                onClick={login}
                 data-ocid="login.apple_button"
                 className="flex items-center justify-center gap-2 border border-border bg-card rounded-xl py-3 px-4 text-sm font-body font-medium text-foreground hover:bg-muted/40 hover:border-primary/30 transition-all duration-200 active:scale-[0.98]"
               >
