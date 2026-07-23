@@ -1,6 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
+import { MOCK_MODE } from "./lib/mock-mode";
 import {
   RouterProvider,
   createRootRoute,
@@ -25,12 +26,13 @@ function AuthLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (MOCK_MODE) return;
     if (!isInitializing && !isAuthenticated) {
       navigate({ to: "/login" });
     }
   }, [isAuthenticated, isInitializing, navigate]);
 
-  if (isInitializing) {
+  if (!MOCK_MODE && isInitializing) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="space-y-3 w-48">
@@ -42,7 +44,7 @@ function AuthLayout() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!MOCK_MODE && !isAuthenticated) {
     return null;
   }
 

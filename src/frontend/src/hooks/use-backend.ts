@@ -1,6 +1,8 @@
 import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createActor } from "../backend";
+import { MOCK_MODE } from "../lib/mock-mode";
+import { mockBackend } from "../mocks/backend";
 import type {
   CycleInfo,
   DailyLog,
@@ -12,7 +14,9 @@ import type {
 } from "../types";
 
 export function useBackendActor() {
-  return useActor(createActor);
+  const real = useActor(createActor);
+  if (MOCK_MODE) return { actor: mockBackend, isFetching: false };
+  return real;
 }
 
 export function useOnboardingProfile() {

@@ -3,6 +3,7 @@ import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useOnboardingProfile } from "../hooks/use-backend";
+import { MOCK_MODE } from "../lib/mock-mode";
 
 export default function LoginPage() {
   const { isAuthenticated, isInitializing } = useInternetIdentity();
@@ -14,6 +15,10 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
 
   useEffect(() => {
+    if (MOCK_MODE) {
+      navigate({ to: "/home" });
+      return;
+    }
     if (!isAuthenticated || isInitializing || isProfileLoading) return;
     if (profile !== null && profile !== undefined) {
       navigate({ to: "/home" });

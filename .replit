@@ -35,3 +35,4 @@ externalPort = 80
 
 [userenv.shared]
 CANISTER_ID_BACKEND = "local-dev-placeholder"
+VITE_MOCK_MODE = "true"
