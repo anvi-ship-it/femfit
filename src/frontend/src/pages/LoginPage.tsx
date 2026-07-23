@@ -114,7 +114,7 @@ export default function LoginPage() {
           <div className="bg-card rounded-2xl border border-border shadow-sm px-6 py-8 space-y-5">
             <div className="text-center space-y-1">
               <h2 className="font-body font-semibold text-foreground text-lg">
-                Welcome back
+                Hello beautiful 🌸
               </h2>
               <p className="text-sm text-muted-foreground">
                 Sign in to continue your fitness journey
