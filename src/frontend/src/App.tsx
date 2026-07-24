@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { MOCK_MODE } from "./lib/mock-mode";
+import { isLocallyAuthenticated, isProfileComplete } from "./lib/local-auth";
 import {
   RouterProvider,
   createRootRoute,
@@ -17,6 +18,7 @@ import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import PlansPage from "./pages/PlansPage";
 import ProfilePage from "./pages/ProfilePage";
+import ProfileSetupPage from "./pages/ProfileSetupPage";
 import ProgressPage from "./pages/ProgressPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 
@@ -26,7 +28,13 @@ function AuthLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (MOCK_MODE) return;
+    if (MOCK_MODE) {
+      // In mock mode, use localStorage auth
+      if (!isLocallyAuthenticated()) {
+        navigate({ to: "/login" });
+      }
+      return;
+    }
     if (!isInitializing && !isAuthenticated) {
       navigate({ to: "/login" });
     }
@@ -44,23 +52,30 @@ function AuthLayout() {
     );
   }
 
-  if (!MOCK_MODE && !isAuthenticated) {
-    return null;
-  }
+  if (!MOCK_MODE && !isAuthenticated) return null;
+  if (MOCK_MODE && !isLocallyAuthenticated()) return null;
 
   return <Layout />;
 }
 
 const rootRoute = createRootRoute();
 
-// Public route — no auth needed
+// ─── Public routes ────────────────────────────────────────────────────────────
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: LoginPage,
 });
 
-// Auth layout wraps all protected routes
+const profileSetupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile-setup",
+  component: ProfileSetupPage,
+});
+
+// ─── Protected routes ─────────────────────────────────────────────────────────
+
 const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "_auth",
@@ -70,9 +85,7 @@ const authLayoutRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: "/home" });
-  },
+  beforeLoad: () => { throw redirect({ to: "/home" }); },
   component: () => null,
 });
 
@@ -114,6 +127,7 @@ const onboardingRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  profileSetupRoute,
   authLayoutRoute.addChildren([
     indexRoute,
     homeRoute,
@@ -128,9 +142,7 @@ const routeTree = rootRoute.addChildren([
 const router = createRouter({ routeTree });
 
 declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
+  interface Register { router: typeof router; }
 }
 
 export default function App() {
