@@ -340,7 +340,7 @@ export default function ProfileSetupPage() {
                       />
                       <FieldError msg={errors.displayName} />
                     </div>
-                    <Button onClick={() => advance(validateName)} className="w-full rounded-xl font-semibold">
+                    <Button onClick={() => advance(() => validateName(form))} className="w-full rounded-xl font-semibold">
                       Continue
                     </Button>
                   </>
@@ -401,7 +401,7 @@ export default function ProfileSetupPage() {
 
                     <div className="flex gap-3">
                       <Button variant="outline" onClick={retreat} className="flex-1 rounded-xl">Back</Button>
-                      <Button onClick={() => advance(validateMetrics)} className="flex-1 rounded-xl font-semibold">Continue</Button>
+                      <Button onClick={() => advance(() => validateMetrics(form))} className="flex-1 rounded-xl font-semibold">Continue</Button>
                     </div>
                   </>
                 )}
@@ -452,7 +452,7 @@ export default function ProfileSetupPage() {
 
                     <div className="flex gap-3">
                       <Button variant="outline" onClick={retreat} className="flex-1 rounded-xl">Back</Button>
-                      <Button onClick={() => advance(validateGoals)} className="flex-1 rounded-xl font-semibold">Continue</Button>
+                      <Button onClick={() => advance(() => validateGoals(form))} className="flex-1 rounded-xl font-semibold">Continue</Button>
                     </div>
                   </>
                 )}
