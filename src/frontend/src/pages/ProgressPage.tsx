@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useActor } from "@caffeineai/core-infrastructure";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -12,8 +11,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { createActor } from "../backend";
-import { useOnboardingProfile } from "../hooks/use-backend";
+import { useBackendActor, useOnboardingProfile } from "../hooks/use-backend";
 import type { CycleEntry, DailyLog } from "../types";
 import { CYCLE_PHASE_COLORS, CYCLE_PHASE_LABELS } from "../types";
 
@@ -66,10 +64,6 @@ const PHASE_BORDER: Record<string, string> = {
 };
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
-
-function useBackendActor() {
-  return useActor(createActor);
-}
 
 function useCycleHistory() {
   const { actor, isFetching } = useBackendActor();
