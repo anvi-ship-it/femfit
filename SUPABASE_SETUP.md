@@ -1,13 +1,15 @@
 # Supabase setup
 
-The frontend now uses Supabase Auth OTP and Supabase Postgres with row-level security. Internet Identity is no longer used by the frontend.
+The frontend uses Supabase Auth OTP and Supabase Postgres with row-level security. The browser does not use Internet Identity or any service-role/secret key.
 
-1. Create a Supabase project and run `supabase/schema.sql` in its SQL Editor.
-2. In Authentication → Providers, enable **Email** and **Phone**. Configure an email SMTP provider and an SMS provider; Supabase cannot deliver production OTP messages until these providers are configured. Set the OTP expiry/rate limits in Supabase Auth.
-3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the frontend build environment (for Vercel, add both as public build variables, then redeploy). The anon/publishable key is intended for browser use. Never put a service-role key in the frontend.
-4. Configure the site's allowed URLs/redirect URLs and your production domain in Supabase Auth settings.
-5. Test signup/sign-in by requesting and verifying email and SMS OTPs. RLS binds profile and daily-log rows to `auth.uid()`; subscriptions are read-only to clients.
+1. Run `supabase/schema.sql` in the Supabase SQL Editor.
+2. In Supabase Authentication → Providers, enable Email and Phone. Configure production SMTP and an SMS provider; configure the email template to include `{{ .Token }}` if you want a numeric OTP (otherwise Supabase may send a magic link). Set OTP expiry and rate limits.
+3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (or `VITE_SUPABASE_PUBLISHABLE_KEY`) in the hosting provider's frontend build environment. The project's publishable key may be used here. The `SUPABASE_SECRET_KEY` supplied in a chat is never used by the app and must never be exposed to a browser.
+4. Add the deployed app URL to Supabase Auth's allowed site/redirect URL configuration.
+5. Deploy/rebuild the frontend, then test email and SMS delivery and verification.
 
-The OTP experience uses the same code flow for new and existing accounts. Database RLS is the authorization boundary. Supabase account users can access only rows with their own `user_id`.
+RLS scopes profile and daily-log writes to `auth.uid()`. The browser can only insert an active free trial of at most seven days. Subscription purchases, paid entitlement changes, and Stripe callbacks are intentionally not client-writeable; implement those through trusted Supabase Edge Functions and verified Stripe webhooks before using paid checkout.
 
-**Migration note:** Existing profiles, daily logs, and subscriptions in the Internet Computer canister are not copied automatically. Export/migrate those records before disabling the old deployment if you need to preserve current users' data. The old canister backend remains in the repository as an unused artifact; the frontend no longer invokes it. Stripe checkout and subscription activation require trusted Supabase Edge Functions and webhook verification before they can be enabled; the browser must not write subscription entitlements.
+Existing canister profiles, daily logs, subscriptions, and authentication users are not migrated automatically. Export data from the old canister and import it into the matching Supabase Auth UUIDs before disabling the old deployment if existing user data must be retained. The canister source remains as an unused artifact; the frontend no longer invokes its data/auth APIs.
+
+This frontend uses Supabase Auth and PostgREST endpoints directly to avoid placing server-only credentials in a browser. Do not install `@supabase/server` in the frontend: server SDKs are not browser clients.
