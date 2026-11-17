@@ -29,8 +29,9 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    allowedHosts: true,
+    server: {
+    allowedHosts: ["localhost", "127.0.0.1", ".v0.build"],
+
     proxy: {
       "/api": {
         target: "http://127.0.0.1:4943",
@@ -43,6 +44,11 @@ export default defineConfig({
     environment("all", { prefix: "DFX_" }),
     environment(["II_URL"]),
     environment(["STORAGE_GATEWAY_URL"]),
+    environment({
+      NEXT_PUBLIC_SUPABASE_URL: "",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+    }),
     react(),
   ],
   resolve: {
