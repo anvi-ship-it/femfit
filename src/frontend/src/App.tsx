@@ -1,8 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
-import { useInternetIdentity } from "@caffeineai/core-infrastructure";
-import { MOCK_MODE } from "./lib/mock-mode";
-import { isLocallyAuthenticated, isProfileComplete } from "./lib/local-auth";
 import {
   RouterProvider,
   createRootRoute,
@@ -11,8 +8,9 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import Layout from "./components/Layout";
+import { createClient } from "./lib/supabase/client";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
@@ -22,25 +20,33 @@ import ProfileSetupPage from "./pages/ProfileSetupPage";
 import ProgressPage from "./pages/ProgressPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 
-/** Wraps all protected routes — redirects to /login if not authenticated */
-function AuthLayout() {
-  const { isAuthenticated, isInitializing } = useInternetIdentity();
+function useSupabaseSession() {
+  const [user, setUser] = useState<unknown | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = createClient().auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return { user, isLoading };
+}
+
+function SessionGate({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useSupabaseSession();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (MOCK_MODE) {
-      // In mock mode, use localStorage auth
-      if (!isLocallyAuthenticated()) {
-        navigate({ to: "/login" });
-      }
-      return;
-    }
-    if (!isInitializing && !isAuthenticated) {
-      navigate({ to: "/login" });
-    }
-  }, [isAuthenticated, isInitializing, navigate]);
+    if (!isLoading && !user) navigate({ to: "/login" });
+  }, [isLoading, navigate, user]);
 
-  if (!MOCK_MODE && isInitializing) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="space-y-3 w-48">
@@ -52,10 +58,24 @@ function AuthLayout() {
     );
   }
 
-  if (!MOCK_MODE && !isAuthenticated) return null;
-  if (MOCK_MODE && !isLocallyAuthenticated()) return null;
+  return user ? <>{children}</> : null;
+}
 
-  return <Layout />;
+/** Wraps all protected routes — redirects to /login if not authenticated */
+function AuthLayout() {
+  return (
+    <SessionGate>
+      <Layout />
+    </SessionGate>
+  );
+}
+
+function ProtectedProfileSetup() {
+  return (
+    <SessionGate>
+      <ProfileSetupPage />
+    </SessionGate>
+  );
 }
 
 const rootRoute = createRootRoute();
@@ -71,7 +91,7 @@ const loginRoute = createRoute({
 const profileSetupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/profile-setup",
-  component: ProfileSetupPage,
+  component: ProtectedProfileSetup,
 });
 
 // ─── Protected routes ─────────────────────────────────────────────────────────
@@ -85,7 +105,9 @@ const authLayoutRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: "/",
-  beforeLoad: () => { throw redirect({ to: "/home" }); },
+  beforeLoad: () => {
+    throw redirect({ to: "/home" });
+  },
   component: () => null,
 });
 
@@ -142,7 +164,9 @@ const routeTree = rootRoute.addChildren([
 const router = createRouter({ routeTree });
 
 declare module "@tanstack/react-router" {
-  interface Register { router: typeof router; }
+  interface Register {
+    router: typeof router;
+  }
 }
 
 export default function App() {
