@@ -5,11 +5,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useInitFreeTrial, useSaveOnboardingProfile, useOnboardingProfile } from "../hooks/use-backend";
-import { DietaryPreference, FitnessGoal, FitnessLevel, HealthCondition, type OnboardingProfile } from "../types";
+import { DietaryPreference, FitnessGoal, FitnessLevel, type OnboardingProfile } from "../types";
 
 export default function SupabaseProfileSetupPage() {
   const navigate = useNavigate();
-  const { data: existing, isLoading } = useOnboardingProfile();
+  const { data: existing, isLoading, isError, error, refetch } = useOnboardingProfile();
   const save = useSaveOnboardingProfile();
   const trial = useInitFreeTrial();
   const [name, setName] = useState("");
@@ -30,12 +30,18 @@ export default function SupabaseProfileSetupPage() {
     try {
       const startNs=BigInt(new Date(`${cycleDate}T00:00:00Z`).getTime())*1_000_000n;
       const profile: OnboardingProfile={displayName:name.trim(),age:BigInt(a),heightCm:BigInt(h),weightKg:w,fitnessLevel,fitnessGoal,dietPrefs:[DietaryPreference.none],allergies:[],healthConditions:[],cycleStartDate:startNs,cycleLengthDays:BigInt(c),periodDurationDays:BigInt(p)};
-      await save.mutateAsync(profile); await trial.mutateAsync(); toast.success("Profile created. Welcome to FemFit 🌸"); navigate({to:"/home"});
-    } catch (error) { console.error(error); toast.error(error instanceof Error ? error.message : "Could not save your profile. Please try again."); }
-    finally { setBusy(false); }
+      await save.mutateAsync(profile);
+      await trial.mutateAsync();
+      toast.success("Profile created. Welcome to FemFit 🌸");
+      await navigate({to:"/home"});
+    } catch (error) {
+      console.error("FemFit onboarding failed:", error);
+      toast.error(error instanceof Error ? error.message : "Could not finish setup. Please try again.");
+    } finally { setBusy(false); }
   }
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading your profile…</div>;
   if (existing) return null;
+  if (isError) return <main className="flex min-h-screen items-center justify-center bg-background px-5"><section className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 text-center"><h1 className="font-display text-xl">Could not connect to your FemFit account</h1><p role="alert" className="text-sm text-destructive">{error instanceof Error ? error.message : "Check your Supabase configuration and database setup."}</p><Button className="w-full" onClick={() => void refetch()}>Try again</Button></section></main>;
   return <main className="flex min-h-screen items-center justify-center bg-background px-5 py-8"><section className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6"><div className="text-center"><div className="text-4xl">🌸</div><h1 className="font-display text-2xl">Set up your FemFit profile</h1><p className="text-sm text-muted-foreground">Your health data is saved privately to your Supabase account.</p></div>
     <div><Label htmlFor="setup-name">Name</Label><Input id="setup-name" value={name} onChange={(e)=>setName(e.target.value)} autoComplete="name"/></div>
     <div className="grid grid-cols-3 gap-2">{[["Age",age,setAge],["Height cm",height,setHeight],["Weight kg",weight,setWeight]].map(([label,value,setter])=><div key={label as string}><Label>{label as string}</Label><Input type="number" value={value as string} onChange={(e)=>(setter as (v:string)=>void)(e.target.value)}/></div>)}</div>
@@ -44,6 +50,6 @@ export default function SupabaseProfileSetupPage() {
     <div><Label htmlFor="cycle-date">Last period start date</Label><Input id="cycle-date" type="date" max={new Date().toISOString().slice(0,10)} value={cycleDate} onChange={(e)=>setCycleDate(e.target.value)}/></div>
     <div className="grid grid-cols-2 gap-3"><div><Label>Cycle length (21–35 days)</Label><Input type="number" min="21" max="35" value={cycleLength} onChange={(e)=>setCycleLength(e.target.value)}/></div><div><Label>Period length (1–10 days)</Label><Input type="number" min="1" max="10" value={periodLength} onChange={(e)=>setPeriodLength(e.target.value)}/></div></div>
     <p className="text-xs text-muted-foreground">Health condition and dietary preferences can be refined later in your profile.</p>
-    <Button className="w-full" disabled={busy} onClick={finish}>{busy ? "Saving…" : "Save profile and continue"}</Button>
+    <Button className="w-full" disabled={busy} onClick={finish}>{busy ? "Connecting and saving…" : "Save profile and continue"}</Button>
   </section></main>;
 }

@@ -10,22 +10,26 @@ export interface SupabaseSession {
   access_token: string;
   refresh_token: string;
   expires_at?: number;
+  expires_in?: number;
   user: { id: string; email?: string; phone?: string };
 }
 
 function config() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) in the frontend build environment.");
+  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel Project Settings → Environment Variables, then redeploy.");
   return { url: SUPABASE_URL.replace(/\/$/, ""), key: SUPABASE_KEY };
 }
 function readSession(): SupabaseSession | null {
   try { const raw = localStorage.getItem(SESSION_KEY); return raw ? JSON.parse(raw) as SupabaseSession : null; } catch { return null; }
 }
+function normalizeSession(value: SupabaseSession): SupabaseSession {
+  return { ...value, expires_at: value.expires_at ?? (value.expires_in ? Math.floor(Date.now() / 1000) + value.expires_in : undefined) };
+}
 let session: SupabaseSession | null = typeof window === "undefined" ? null : readSession();
 const listeners = new Set<(value: SupabaseSession | null) => void>();
 function setSession(value: SupabaseSession | null) {
-  session = value;
-  if (typeof window !== "undefined") { if (value) localStorage.setItem(SESSION_KEY, JSON.stringify(value)); else localStorage.removeItem(SESSION_KEY); }
-  listeners.forEach((listener) => listener(value));
+  session = value ? normalizeSession(value) : null;
+  if (typeof window !== "undefined") { try { if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session)); else localStorage.removeItem(SESSION_KEY); } catch { /* Private browsing may disable persistence; keep this tab's session active. */ } }
+  listeners.forEach((listener) => listener(session));
 }
 async function authRequest(path: string, body?: unknown) {
   const { url, key } = config();
@@ -47,7 +51,7 @@ export async function sendOtp(method: "email" | "phone", value: string) {
 }
 export async function verifyOtp(method: "email" | "phone", value: string, token: string) {
   const result = await authRequest("verify", method === "email" ? { email: value.trim().toLowerCase(), token: token.trim(), type: "email" } : { phone: value, token: token.trim(), type: "sms" });
-  if (!result.access_token || !result.refresh_token || !result.user?.id) throw new Error("No session was returned. Check the email/SMS OTP provider and template in Supabase Auth.");
+  if (!result.access_token || !result.refresh_token || !result.user?.id) throw new Error("Supabase accepted the code but did not return a session. Check Auth provider settings.");
   setSession(result as SupabaseSession);
 }
 async function refreshSession() {
@@ -57,8 +61,9 @@ async function refreshSession() {
 }
 export async function getAccessToken() {
   if (!session) session = readSession();
-  if (!session) throw new Error("Please sign in again.");
-  if (session.expires_at && session.expires_at * 1000 < Date.now() + 30_000) {
+  if (!session) throw new Error("Your sign-in session is missing. Please sign in again.");
+  if (!session.expires_at && session.expires_in) session = normalizeSession(session);
+  if (session.expires_at && session.expires_at * 1000 < Date.now() + 60_000) {
     const fresh = await refreshSession();
     if (!fresh) throw new Error("Your session expired. Please sign in again.");
   }
@@ -68,8 +73,15 @@ export async function apiRequest<T>(table: string, options: { method?: string; q
   const { url, key } = config(); const token = await getAccessToken();
   let response: Response;
   try { response = await fetch(`${url}/rest/v1/${table}${options.query ? `?${options.query}` : ""}`, { method: options.method ?? "GET", headers: { apikey: key, Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(options.prefer ? { Prefer: options.prefer } : {}) }, ...(options.body === undefined ? {} : { body: JSON.stringify(options.body, (_k, v) => typeof v === "bigint" ? v.toString() : v) }) }); }
-  catch { throw new Error("Could not reach Supabase. Check your connection and try again."); }
-  if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.message || data.details || data.hint || "Could not access FemFit data. Check the Supabase schema and row-level security policies."); }
+  catch { throw new Error("Could not connect to Supabase. Check your connection and try again."); }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    const message = data.message || data.details || data.hint || "Supabase data request failed.";
+    if (response.status === 401) { setSession(null); throw new Error("Your sign-in session expired. Please sign in again."); }
+    if (response.status === 404 || /relation .* does not exist|could not find the table/i.test(message)) throw new Error("FemFit's Supabase tables are not set up yet. Run supabase/schema.sql in the Supabase SQL Editor, then try again.");
+    if (response.status === 403 || response.status === 42501 || /row-level security|permission denied/i.test(message)) throw new Error("Supabase blocked this request. Confirm the schema and row-level security policies from supabase/schema.sql are installed.");
+    throw new Error(message);
+  }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
@@ -89,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     listeners.add(listener);
     const onStorage = (event: StorageEvent) => { if (event.key === SESSION_KEY) { const next = readSession(); session = next; setCurrent(next); } };
     window.addEventListener("storage", onStorage);
-    const initialize = async () => { const saved = readSession(); session = saved; if (saved?.expires_at && saved.expires_at * 1000 < Date.now() + 30_000) await refreshSession(); if (mounted) { setCurrent(session); setInitializing(false); } };
+    const initialize = async () => { const saved = readSession(); session = saved ? normalizeSession(saved) : null; if (session?.expires_at && session.expires_at * 1000 < Date.now() + 60_000) await refreshSession(); if (mounted) { setCurrent(session); setInitializing(false); } };
     void initialize();
     return () => { mounted = false; listeners.delete(listener); window.removeEventListener("storage", onStorage); };
   }, []);
