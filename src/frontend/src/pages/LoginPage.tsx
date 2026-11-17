@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Flower2 } from "lucide-react";
 import { isProfileComplete } from "../lib/local-auth";
 import { createClient } from "../lib/supabase/client";
 
@@ -386,7 +387,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
           <>
             <div className="text-center space-y-1">
               <h2 className="font-body font-semibold text-foreground text-lg">
-                Hello beautiful 🌸
+                Hello beautiful <Flower2 aria-hidden="true" className="inline-block h-4 w-4 text-primary" />
               </h2>
               <p className="text-sm text-muted-foreground">
                 Create your account to get started
