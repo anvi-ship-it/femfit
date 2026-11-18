@@ -24,7 +24,7 @@ function getAuthErrorMessage(error: unknown): string {
   };
 
   if (code === "phone_provider_disabled") {
-    return "Phone verification is not enabled yet: this Supabase project has no SMS provider configured. Choose Email for now, or configure an SMS provider to use phone OTP.";
+    return "Phone verification is not enabled yet: this Supabase project has no SMS provider configured. Configure an SMS provider to use phone OTP.";
   }
   if (code === "weak_password") return "Choose a stronger password.";
   if (code === "email_address_invalid") return "Enter a valid email address.";
@@ -243,9 +243,7 @@ function MethodToggle({
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState<SignupStep>("method");
-  const [method, setMethod] = useState<AuthMethod>("phone");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -263,15 +261,8 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
   };
 
   const handleSendOtp = async () => {
-    const errs: Record<string, string> = {};
-    if (method === "phone") {
-      if (phone.replace(/\D/g, "").length < 10)
-        errs.value = "Enter a valid 10-digit phone number.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.value = "Enter a valid email address.";
-    }
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+    if (phone.replace(/\D/g, "").length < 10) {
+      setErrors({ value: "Enter a valid 10-digit phone number." });
       return;
     }
 
@@ -279,15 +270,12 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp(
-        method === "phone"
-          ? { phone: `+91${phone}`, options: { shouldCreateUser: true } }
-          : { email, options: { shouldCreateUser: true } },
-      );
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: `+91${phone}`,
+        options: { shouldCreateUser: true },
+      });
       if (error) throw error;
-      toast.success(
-        `Verification code sent to ${method === "phone" ? `+91 ${phone}` : email}`,
-      );
+      toast.success(`Verification code sent to +91 ${phone}`);
       goNext("otp");
     } catch (error) {
       console.error("OTP send failed:", error);
@@ -307,11 +295,11 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.verifyOtp(
-        method === "phone"
-          ? { phone: `+91${phone}`, token: otp, type: "sms" }
-          : { email, token: otp, type: "email" },
-      );
+      const { error } = await supabase.auth.verifyOtp({
+        phone: `+91${phone}`,
+        token: otp,
+        type: "sms",
+      });
       if (error) throw error;
       goNext("password");
     } catch (error) {
@@ -327,11 +315,10 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     setErrors({});
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resend(
-        method === "phone"
-          ? { type: "sms", phone: `+91${phone}` }
-          : { type: "signup", email },
-      );
+      const { error } = await supabase.auth.resend({
+        type: "sms",
+        phone: `+91${phone}`,
+      });
       if (error) throw error;
       toast.success("A new verification code has been sent.");
     } catch (error) {
@@ -400,36 +387,17 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
                 Create your account to get started
               </p>
             </div>
-            <MethodToggle
-              method={method}
-              onChange={(m) => {
-                setMethod(m);
-                setErrors({});
-              }}
+            <InputField
+              label="Mobile number"
+              id="signup-phone"
+              type="tel"
+              inputMode="numeric"
+              placeholder="9876543210"
+              prefix="+91"
+              value={phone}
+              onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
+              error={errors.value}
             />
-            {method === "phone" ? (
-              <InputField
-                label="Mobile number"
-                id="signup-phone"
-                type="tel"
-                inputMode="numeric"
-                placeholder="9876543210"
-                prefix="+91"
-                value={phone}
-                onChange={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))}
-                error={errors.value}
-              />
-            ) : (
-              <InputField
-                label="Email address"
-                id="signup-email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={setEmail}
-                error={errors.value}
-              />
-            )}
             <PrimaryButton onClick={handleSendOtp} loading={loading}>
               Send verification code
             </PrimaryButton>
@@ -449,9 +417,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
               </h2>
               <p className="text-sm text-muted-foreground">
                 Sent to{" "}
-                <span className="text-foreground font-medium">
-                  {method === "phone" ? `+91 ${phone}` : email}
-                </span>
+                <span className="text-foreground font-medium">+91 {phone}</span>
               </p>
             </div>
             <div className="space-y-1.5">
@@ -499,7 +465,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
               }}
               className="w-full text-sm text-muted-foreground hover:text-primary transition-colors text-center"
             >
-              ← Change {method === "phone" ? "number" : "email"}
+              ← Change number
             </button>
             <button
               type="button"
