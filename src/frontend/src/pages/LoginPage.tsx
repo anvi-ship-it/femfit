@@ -1,49 +1,41 @@
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Flower2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { isProfileComplete } from "../lib/local-auth";
-import { createClient } from "../lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Mode = "signup" | "signin";
-type AuthMethod = "phone" | "email";
-
-type SignupStep = "method" | "credentials" | "otp" | "password";
+type SignupStep = "method" | "otp";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getAuthErrorMessage(error: unknown): string {
-  const { code, status, message } = (error ?? {}) as {
-    code?: string;
-    status?: number;
-    message?: string;
+async function authRequest(
+  path: string,
+  body?: Record<string, string>,
+  method = "POST",
+): Promise<{ phone?: string }> {
+  const response = await fetch(path, {
+    method,
+    credentials: "same-origin",
+    ...(body
+      ? {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      : {}),
+  });
+  const result = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    phone?: string;
   };
-
-  if (code === "phone_provider_disabled") {
-    return "Phone verification is not enabled yet: this Supabase project has no SMS provider configured. Configure an SMS provider to use phone OTP.";
-  }
-  if (code === "weak_password") return "Choose a stronger password.";
-  if (code === "email_address_invalid") return "Enter a valid email address.";
-  if (code === "email_address_not_authorized")
-    return "Email delivery is not enabled for this address yet.";
-  if (
-    code === "over_email_send_rate_limit" ||
-    code === "over_sms_send_rate_limit" ||
-    status === 429
-  ) {
-    return "Too many attempts. Wait a moment, then try again.";
-  }
-  if (message?.includes("Supabase public configuration is missing")) {
-    return "Account verification is not configured yet. Please try again later.";
-  }
-  if (message?.toLowerCase().includes("not configured")) {
-    return "This verification method is not enabled for the project. Try email or contact support.";
-  }
-  return "We couldn't verify those details. Check the code and try again.";
+  if (!response.ok)
+    throw new Error(result.error || "We could not complete that request.");
+  return result;
 }
 
 function Logo() {
@@ -182,71 +174,18 @@ function PrimaryButton({
   );
 }
 
-function MethodToggle({
-  method,
-  onChange,
-}: {
-  method: AuthMethod;
-  onChange: (m: AuthMethod) => void;
-}) {
-  return (
-    <div className="flex bg-muted rounded-xl p-1 gap-1">
-      {(["phone", "email"] as AuthMethod[]).map((m) => (
-        <button
-          key={m}
-          type="button"
-          onClick={() => onChange(m)}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-body font-semibold transition-all duration-200",
-            method === m
-              ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {m === "phone" ? (
-            <>
-              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-                <title>Phone</title>
-                <path d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2Z" />
-              </svg>
-              Phone
-            </>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-                <title>Email</title>
-                <path
-                  d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <polyline
-                  points="22,6 12,13 2,6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Email
-            </>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // ─── Sign Up Flow ─────────────────────────────────────────────────────────────
 
-function SignUpForm({ onDone }: { onDone: () => void }) {
+function SignUpForm({
+  mode,
+  onDone,
+}: {
+  mode: Mode;
+  onDone: (phone: string) => void;
+}) {
   const [step, setStep] = useState<SignupStep>("method");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [dir, setDir] = useState(1);
@@ -269,17 +208,15 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     setErrors({});
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: `+91${phone}`,
-        options: { shouldCreateUser: true },
-      });
-      if (error) throw error;
+      await authRequest("/api/auth/request-code", { phone: `+91${phone}` });
       toast.success(`Verification code sent to +91 ${phone}`);
       goNext("otp");
     } catch (error) {
       console.error("OTP send failed:", error);
-      setErrors({ value: getAuthErrorMessage(error) });
+      setErrors({
+        value:
+          error instanceof Error ? error.message : "Could not send a code.",
+      });
     } finally {
       setLoading(false);
     }
@@ -294,17 +231,19 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     setErrors({});
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.verifyOtp({
+      const session = await authRequest("/api/auth/verify-code", {
         phone: `+91${phone}`,
-        token: otp,
-        type: "sms",
+        code: otp,
       });
-      if (error) throw error;
-      goNext("password");
+      onDone(session.phone ?? `+91${phone}`);
     } catch (error) {
       console.error("OTP verification failed:", error);
-      setErrors({ otp: getAuthErrorMessage(error) });
+      setErrors({
+        otp:
+          error instanceof Error
+            ? error.message
+            : "Could not verify that code.",
+      });
     } finally {
       setLoading(false);
     }
@@ -314,41 +253,14 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     setLoading(true);
     setErrors({});
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resend({
-        type: "sms",
-        phone: `+91${phone}`,
-      });
-      if (error) throw error;
+      await authRequest("/api/auth/request-code", { phone: `+91${phone}` });
       toast.success("A new verification code has been sent.");
     } catch (error) {
       console.error("OTP resend failed:", error);
-      setErrors({ otp: getAuthErrorMessage(error) });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateAccount = async () => {
-    const errs: Record<string, string> = {};
-    if (password.length < 8)
-      errs.password = "Password must be at least 8 characters.";
-    if (password !== confirmPassword)
-      errs.confirmPassword = "Passwords do not match.";
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-
-    setErrors({});
-    setLoading(true);
-    try {
-      const { error } = await createClient().auth.updateUser({ password });
-      if (error) throw error;
-      onDone();
-    } catch (error) {
-      console.error("Password setup failed:", error);
-      setErrors({ password: getAuthErrorMessage(error) });
+      setErrors({
+        otp:
+          error instanceof Error ? error.message : "Could not resend the code.",
+      });
     } finally {
       setLoading(false);
     }
@@ -377,14 +289,16 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
           <>
             <div className="text-center space-y-1">
               <h2 className="font-body font-semibold text-foreground text-lg">
-                Hello beautiful{" "}
+                {mode === "signup" ? "Hello beautiful" : "Welcome back"}{" "}
                 <Flower2
                   aria-hidden="true"
                   className="inline-block h-4 w-4 text-primary"
                 />
               </h2>
               <p className="text-sm text-muted-foreground">
-                Create your account to get started
+                {mode === "signup"
+                  ? "Create your account to get started"
+                  : "Sign in with your verified phone number"}
               </p>
             </div>
             <InputField
@@ -477,52 +391,6 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
             </button>
           </>
         )}
-
-        {/* STEP: password */}
-        {step === "password" && (
-          <>
-            <div className="text-center space-y-1">
-              <h2 className="font-body font-semibold text-foreground text-lg">
-                Choose a password
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Your verified account is ready. Set a password to sign in next
-                time.
-              </p>
-            </div>
-            <InputField
-              label="Password"
-              id="signup-password"
-              type="password"
-              placeholder="Min. 8 characters"
-              value={password}
-              onChange={setPassword}
-              error={errors.password}
-            />
-            <InputField
-              label="Confirm password"
-              id="signup-confirm"
-              type="password"
-              placeholder="Re-enter password"
-              value={confirmPassword}
-              onChange={setConfirmPassword}
-              error={errors.confirmPassword}
-            />
-            <PrimaryButton onClick={handleCreateAccount} loading={loading}>
-              Create Account
-            </PrimaryButton>
-            <button
-              type="button"
-              onClick={() => {
-                goBack("otp");
-                setErrors({});
-              }}
-              className="w-full text-sm text-muted-foreground hover:text-primary transition-colors text-center"
-            >
-              ← Back
-            </button>
-          </>
-        )}
       </motion.div>
     </AnimatePresence>
   );
@@ -530,130 +398,26 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
 
 // ─── Sign In Flow ─────────────────────────────────────────────────────────────
 
-function SignInForm({ onDone }: { onDone: () => void }) {
-  const [method, setMethod] = useState<AuthMethod>("phone");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-
-  const handleSignIn = async () => {
-    const errs: Record<string, string> = {};
-    if (method === "phone") {
-      if (phone.replace(/\D/g, "").length < 10)
-        errs.value = "Enter a valid 10-digit phone number.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errs.value = "Enter a valid email address.";
-    }
-    if (!password) errs.password = "Please enter your password.";
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-
-    setErrors({});
-    setLoading(true);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword(
-        method === "phone"
-          ? { phone: `+91${phone}`, password }
-          : { email, password },
-      );
-      if (error) throw error;
-      onDone();
-    } catch (error) {
-      console.error("Sign-in failed:", error);
-      setErrors({
-        password: "Email/phone or password is incorrect. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="text-center space-y-1">
-        <h2 className="font-body font-semibold text-foreground text-lg">
-          Welcome back 🌸
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Sign in to continue your journey
-        </p>
-      </div>
-      <MethodToggle
-        method={method}
-        onChange={(m) => {
-          setMethod(m);
-          setErrors({});
-        }}
-      />
-      {method === "phone" ? (
-        <InputField
-          label="Mobile number"
-          id="signin-phone"
-          type="tel"
-          inputMode="numeric"
-          placeholder="9876543210"
-          prefix="+91"
-          value={phone}
-          onChange={(v) => {
-            setPhone(v.replace(/\D/g, "").slice(0, 10));
-            setErrors({});
-          }}
-          error={errors.value}
-        />
-      ) : (
-        <InputField
-          label="Email address"
-          id="signin-email"
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(v) => {
-            setEmail(v);
-            setErrors({});
-          }}
-          error={errors.value}
-        />
-      )}
-      <InputField
-        label="Password"
-        id="signin-password"
-        type="password"
-        placeholder="Your password"
-        value={password}
-        onChange={(v) => {
-          setPassword(v);
-          setErrors({});
-        }}
-        error={errors.password}
-      />
-      <div className="text-right">
-        <button
-          type="button"
-          className="text-xs text-primary hover:underline font-body"
-        >
-          Forgot password?
-        </button>
-      </div>
-      <PrimaryButton onClick={handleSignIn} loading={loading}>
-        Sign In
-      </PrimaryButton>
-    </div>
-  );
+function SignInForm({ onDone }: { onDone: (phone: string) => void }) {
+  return <SignUpForm mode="signin" onDone={onDone} />;
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>("signup");
 
-  const handleSignUpDone = () => navigate({ to: "/profile-setup" });
-  const handleSignInDone = () => {
+  const startSession = (phone: string) => {
+    queryClient.setQueryData(["authSession"], { authenticated: true, phone });
+  };
+  const handleSignUpDone = (phone: string) => {
+    startSession(phone);
+    navigate({ to: "/profile-setup" });
+  };
+  const handleSignInDone = (phone: string) => {
+    startSession(phone);
     if (isProfileComplete()) navigate({ to: "/home" });
     else navigate({ to: "/profile-setup" });
   };
@@ -707,7 +471,7 @@ export default function LoginPage() {
                 className="px-6 py-7"
               >
                 {mode === "signup" ? (
-                  <SignUpForm onDone={handleSignUpDone} />
+                  <SignUpForm mode="signup" onDone={handleSignUpDone} />
                 ) : (
                   <SignInForm onDone={handleSignInDone} />
                 )}

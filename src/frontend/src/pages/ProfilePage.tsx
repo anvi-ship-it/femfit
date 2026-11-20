@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { Calendar, LogOut, RefreshCw, Save, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useAuthSession } from "../hooks/use-auth-session";
 import {
   useCycleInfo,
   useOnboardingProfile,
@@ -99,8 +99,16 @@ function Field({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const { identity, clear } = useInternetIdentity();
+  const { session, signOut } = useAuthSession();
   const { data: profile, isLoading } = useOnboardingProfile();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch {
+      toast.error("Could not sign out. Please try again.");
+    }
+  };
   const { data: cycleInfo } = useCycleInfo();
   const updateProfile = useUpdateOnboardingProfile();
   const updateCycle = useUpdateCycleStartDate();
@@ -261,7 +269,7 @@ export default function ProfilePage() {
     });
   };
 
-  const principal = identity?.getPrincipal()?.toString() ?? "";
+  const principal = session?.phone ?? "";
 
   if (isLoading) {
     return (
@@ -611,7 +619,7 @@ export default function ProfilePage() {
         <Button
           variant="ghost"
           className="w-full rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-smooth"
-          onClick={clear}
+          onClick={() => void handleSignOut()}
           data-ocid="profile.signout_button"
         >
           <LogOut className="size-4 mr-2" />

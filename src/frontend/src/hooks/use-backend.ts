@@ -13,11 +13,17 @@ import type {
   WorkoutTemplate,
 } from "../types";
 
-export function useBackendActor() {
-  const real = useActor(createActor);
-  if (MOCK_MODE) return { actor: mockBackend, isFetching: false };
-  return real;
+function useMockBackendActor() {
+  return { actor: mockBackend, isFetching: false };
 }
+
+function useConfiguredBackendActor() {
+  return useActor(createActor);
+}
+
+export const useBackendActor = MOCK_MODE
+  ? useMockBackendActor
+  : useConfiguredBackendActor;
 
 export function useOnboardingProfile() {
   const { actor, isFetching } = useBackendActor();
