@@ -59,8 +59,8 @@ function normalizePhone(value) {
 const DEMO_PHONE = "+919876543210";
 const DEMO_CODE = "123456";
 
-function isDevelopmentDemoLogin(phone) {
-  return process.env.NODE_ENV !== "production" && phone === DEMO_PHONE;
+function isDemoAccountLogin(phone) {
+  return phone === DEMO_PHONE;
 }
 
 function getSessionSecret() {
@@ -205,7 +205,7 @@ export async function requestCode(request, response) {
     });
     return;
   }
-  if (isDevelopmentDemoLogin(phone)) {
+  if (isDemoAccountLogin(phone)) {
     json(response, 200, { sent: true, demo: true });
     return;
   }
@@ -266,7 +266,7 @@ export async function verifyCode(request, response) {
     return;
   }
 
-  if (isDevelopmentDemoLogin(phone)) {
+  if (isDemoAccountLogin(phone)) {
     if (code !== DEMO_CODE) {
       json(response, 400, { error: "That code is incorrect. Try again." });
       return;
@@ -309,6 +309,7 @@ export function getSession(request, response) {
   json(response, 200, {
     authenticated: Boolean(session),
     phone: session?.phone ?? null,
+    demo: Boolean(session && isDemoAccountLogin(session.phone)),
   });
 }
 

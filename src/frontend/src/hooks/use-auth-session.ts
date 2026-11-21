@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 export interface AuthSession {
   authenticated: boolean;
   phone: string | null;
+  demo: boolean;
 }
 
 const SESSION_QUERY_KEY = ["authSession"] as const;
@@ -30,9 +31,13 @@ export function useAuthSession() {
       credentials: "same-origin",
     });
     if (!response.ok) throw new Error("Could not sign out. Please try again.");
+    queryClient.removeQueries({
+      predicate: ({ queryKey }) => queryKey[0] !== "authSession",
+    });
     queryClient.setQueryData<AuthSession>(SESSION_QUERY_KEY, {
       authenticated: false,
       phone: null,
+      demo: false,
     });
   };
 

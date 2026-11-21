@@ -315,11 +315,10 @@ function SignUpForm({
             <PrimaryButton onClick={handleSendOtp} loading={loading}>
               Send verification code
             </PrimaryButton>
-            {import.meta.env.DEV && (
-              <p className="text-center text-xs text-muted-foreground">
-                Development demo: +91 9876543210 · OTP 123456
-              </p>
-            )}
+            <p className="text-center text-xs text-muted-foreground">
+              Public demo: +91 9876543210 · OTP 123456. Shared sample data is
+              not saved; do not enter personal information.
+            </p>
             <p className="text-center text-xs text-muted-foreground">
               <span className="text-primary font-medium">7-day free trial</span>{" "}
               — no card required.
@@ -415,15 +414,23 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("signup");
 
   const startSession = (phone: string) => {
-    queryClient.setQueryData(["authSession"], { authenticated: true, phone });
+    queryClient.removeQueries({
+      predicate: ({ queryKey }) => queryKey[0] !== "authSession",
+    });
+    queryClient.setQueryData(["authSession"], {
+      authenticated: true,
+      phone,
+      demo: phone === "+919876543210",
+    });
   };
+  const isDemoPhone = (phone: string) => phone === "+919876543210";
   const handleSignUpDone = (phone: string) => {
     startSession(phone);
-    navigate({ to: "/profile-setup" });
+    navigate({ to: isDemoPhone(phone) ? "/home" : "/profile-setup" });
   };
   const handleSignInDone = (phone: string) => {
     startSession(phone);
-    if (isProfileComplete()) navigate({ to: "/home" });
+    if (isDemoPhone(phone) || isProfileComplete()) navigate({ to: "/home" });
     else navigate({ to: "/profile-setup" });
   };
 
