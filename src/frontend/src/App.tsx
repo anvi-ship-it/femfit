@@ -8,9 +8,9 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect } from "react";
 import Layout from "./components/Layout";
-import { createClient } from "./lib/supabase/client";
+import { useAuthSession } from "./hooks/use-auth-session";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
@@ -20,31 +20,13 @@ import ProfileSetupPage from "./pages/ProfileSetupPage";
 import ProgressPage from "./pages/ProgressPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 
-function useSupabaseSession() {
-  const [user, setUser] = useState<unknown | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = createClient().auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return { user, isLoading };
-}
-
 function SessionGate({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useSupabaseSession();
+  const { session, isLoading } = useAuthSession();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !user) navigate({ to: "/login" });
-  }, [isLoading, navigate, user]);
+    if (!isLoading && !session?.authenticated) navigate({ to: "/login" });
+  }, [isLoading, navigate, session?.authenticated]);
 
   if (isLoading) {
     return (
@@ -58,7 +40,7 @@ function SessionGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return user ? <>{children}</> : null;
+  return session?.authenticated ? <>{children}</> : null;
 }
 
 /** Wraps all protected routes — redirects to /login if not authenticated */

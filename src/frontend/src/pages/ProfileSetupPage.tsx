@@ -26,7 +26,15 @@ import {
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 
-const STEPS = ["name", "metrics", "goals", "diet", "health", "cycle", "done"] as const;
+const STEPS = [
+  "name",
+  "metrics",
+  "goals",
+  "diet",
+  "health",
+  "cycle",
+  "done",
+] as const;
 type Step = (typeof STEPS)[number];
 
 // ─── Form state ───────────────────────────────────────────────────────────────
@@ -84,11 +92,14 @@ function validateName(f: FormState): Errors {
 function validateMetrics(f: FormState): Errors {
   const e: Errors = {};
   const age = Number.parseInt(f.age, 10);
-  if (!f.age || Number.isNaN(age) || age < 13 || age > 80) e.age = "Enter your age (13–80).";
+  if (!f.age || Number.isNaN(age) || age < 13 || age > 80)
+    e.age = "Enter your age (13–80).";
   const h = Number.parseInt(f.heightCm, 10);
-  if (!f.heightCm || Number.isNaN(h) || h < 120 || h > 220) e.heightCm = "Valid height: 120–220 cm.";
+  if (!f.heightCm || Number.isNaN(h) || h < 120 || h > 220)
+    e.heightCm = "Valid height: 120–220 cm.";
   const w = Number.parseFloat(f.weightKg);
-  if (!f.weightKg || Number.isNaN(w) || w < 30 || w > 250) e.weightKg = "Valid weight: 30–250 kg.";
+  if (!f.weightKg || Number.isNaN(w) || w < 30 || w > 250)
+    e.weightKg = "Valid weight: 30–250 kg.";
   if (!f.fitnessLevel) e.fitnessLevel = "Please select your fitness level.";
   return e;
 }
@@ -143,16 +154,28 @@ function CheckCard({
       disabled={disabled}
       className={cn(
         "w-full flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-body font-medium transition-all duration-150 text-left",
-        selected ? "border-primary bg-primary/5 text-primary" : "border-border bg-card text-foreground hover:border-primary/40",
+        selected
+          ? "border-primary bg-primary/5 text-primary"
+          : "border-border bg-card text-foreground hover:border-primary/40",
         disabled && "opacity-40 cursor-not-allowed",
       )}
     >
       {children}
       {selected && (
         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-3">
-          <svg viewBox="0 0 24 24" className="w-3 h-3 text-primary-foreground" fill="none">
+          <svg
+            viewBox="0 0 24 24"
+            className="w-3 h-3 text-primary-foreground"
+            fill="none"
+          >
             <title>Selected</title>
-            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M5 13l4 4L19 7"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       )}
@@ -177,7 +200,9 @@ export default function ProfileSetupPage() {
 
   const currentIdx = STEPS.indexOf(step);
   const profileSteps = STEPS.slice(0, -1); // exclude "done"
-  const progressPct = Math.round((currentIdx / (profileSteps.length - 1)) * 100);
+  const progressPct = Math.round(
+    (currentIdx / (profileSteps.length - 1)) * 100,
+  );
 
   const setField = <K extends keyof FormState>(key: K, val: FormState[K]) => {
     setForm((p) => ({ ...p, [key]: val }));
@@ -190,17 +215,26 @@ export default function ProfileSetupPage() {
       if (noneItem && item !== noneItem && list.includes(noneItem)) return p;
       const has = list.includes(item);
       if (item === noneItem) return { ...p, [key]: has ? [] : [noneItem] };
-      const next = has ? list.filter((x) => x !== item) : [...list.filter((x) => x !== noneItem), item];
+      const next = has
+        ? list.filter((x) => x !== item)
+        : [...list.filter((x) => x !== noneItem), item];
       return { ...p, [key]: next };
     });
   };
 
-  const goTo = (s: Step, d: 1 | -1) => { setDir(d); setErrors({}); setStep(s); };
+  const goTo = (s: Step, d: 1 | -1) => {
+    setDir(d);
+    setErrors({});
+    setStep(s);
+  };
 
   const advance = (validate?: () => Errors) => {
     if (validate) {
       const errs = validate();
-      if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+      if (Object.keys(errs).length > 0) {
+        setErrors(errs);
+        return;
+      }
     }
     goTo(STEPS[currentIdx + 1], 1);
   };
@@ -209,7 +243,10 @@ export default function ProfileSetupPage() {
 
   const handleFinish = async () => {
     const errs = validateCycle(form);
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
     setIsSubmitting(true);
     try {
       const [y, m, d] = form.cycleStartDate.split("-");
@@ -221,10 +258,18 @@ export default function ProfileSetupPage() {
         weightKg: Number.parseFloat(form.weightKg),
         fitnessLevel: form.fitnessLevel as FitnessLevel,
         fitnessGoal: form.fitnessGoal as FitnessGoal,
-        dietPrefs: form.dietPrefs.length === 0 ? [DietaryPreference.none] : form.dietPrefs,
-        allergies: form.allergies.split(",").map((a) => a.trim()).filter(Boolean),
+        dietPrefs:
+          form.dietPrefs.length === 0
+            ? [DietaryPreference.none]
+            : form.dietPrefs,
+        allergies: form.allergies
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean),
         cycleStartDate: startNs,
-        periodDurationDays: BigInt(Number.parseInt(form.periodDurationDays, 10)),
+        periodDurationDays: BigInt(
+          Number.parseInt(form.periodDurationDays, 10),
+        ),
         cycleLengthDays: BigInt(Number.parseInt(form.cycleLengthDays, 10)),
         displayName: form.displayName.trim(),
       };
@@ -248,21 +293,43 @@ export default function ProfileSetupPage() {
     exit: (d: number) => ({ opacity: 0, x: d * -40 }),
   };
 
-  const ORDERED_LEVELS: FitnessLevel[] = [FitnessLevel.beginner, FitnessLevel.intermediate, FitnessLevel.advanced];
-  const ORDERED_GOALS: FitnessGoal[] = [FitnessGoal.weightLoss, FitnessGoal.muscleGain, FitnessGoal.maintenance];
+  const ORDERED_LEVELS: FitnessLevel[] = [
+    FitnessLevel.beginner,
+    FitnessLevel.intermediate,
+    FitnessLevel.advanced,
+  ];
+  const ORDERED_GOALS: FitnessGoal[] = [
+    FitnessGoal.weightLoss,
+    FitnessGoal.muscleGain,
+    FitnessGoal.maintenance,
+  ];
   const GOAL_META: Record<FitnessGoal, { icon: string; desc: string }> = {
-    [FitnessGoal.weightLoss]: { icon: "🔥", desc: "Burn fat & boost metabolism" },
-    [FitnessGoal.muscleGain]: { icon: "💪", desc: "Build strength & lean muscle" },
+    [FitnessGoal.weightLoss]: {
+      icon: "🔥",
+      desc: "Burn fat & boost metabolism",
+    },
+    [FitnessGoal.muscleGain]: {
+      icon: "💪",
+      desc: "Build strength & lean muscle",
+    },
     [FitnessGoal.maintenance]: { icon: "⚖️", desc: "Stay balanced & energised" },
   };
   const ORDERED_DIETS: DietaryPreference[] = [
-    DietaryPreference.none, DietaryPreference.vegetarian, DietaryPreference.vegan,
-    DietaryPreference.glutenFree, DietaryPreference.dairyFree,
+    DietaryPreference.none,
+    DietaryPreference.vegetarian,
+    DietaryPreference.vegan,
+    DietaryPreference.glutenFree,
+    DietaryPreference.dairyFree,
   ];
   const ORDERED_CONDITIONS: HealthCondition[] = [
-    HealthCondition.pcos, HealthCondition.pcod, HealthCondition.diabetes,
-    HealthCondition.thyroidDisorder, HealthCondition.hormoneImbalance,
-    HealthCondition.anemia, HealthCondition.hypertension, HealthCondition.heartCondition,
+    HealthCondition.pcos,
+    HealthCondition.pcod,
+    HealthCondition.diabetes,
+    HealthCondition.thyroidDisorder,
+    HealthCondition.hormoneImbalance,
+    HealthCondition.anemia,
+    HealthCondition.hypertension,
+    HealthCondition.heartCondition,
   ];
 
   return (
@@ -272,19 +339,35 @@ export default function ProfileSetupPage() {
 
       <div className="flex flex-1 items-center justify-center px-5 py-8">
         <div className="relative z-10 w-full max-w-md">
-
           {/* Header */}
           <div className="flex items-center gap-3 mb-5">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-              <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-primary-foreground">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="w-5 h-5 text-primary-foreground"
+              >
                 <title>FemFit</title>
-                <path d="M12 2C8.686 2 6 4.686 6 8c0 2.21.895 4.21 2.343 5.657L12 17.314l3.657-3.657A7.965 7.965 0 0 0 18 8c0-3.314-2.686-6-6-6Z" fill="currentColor" opacity="0.85" />
-                <path d="M12 17.314V22M10 22h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path
+                  d="M12 2C8.686 2 6 4.686 6 8c0 2.21.895 4.21 2.343 5.657L12 17.314l3.657-3.657A7.965 7.965 0 0 0 18 8c0-3.314-2.686-6-6-6Z"
+                  fill="currentColor"
+                  opacity="0.85"
+                />
+                <path
+                  d="M12 17.314V22M10 22h4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
             <div>
-              <p className="font-display text-lg font-semibold text-primary leading-none">FemFit</p>
-              <p className="text-xs text-muted-foreground font-body">Let's set up your profile</p>
+              <p className="font-display text-lg font-semibold text-primary leading-none">
+                FemFit
+              </p>
+              <p className="text-xs text-muted-foreground font-body">
+                Let's set up your profile
+              </p>
             </div>
           </div>
 
@@ -292,7 +375,9 @@ export default function ProfileSetupPage() {
           {step !== "done" && (
             <div className="mb-5">
               <div className="flex justify-between text-xs text-muted-foreground font-body mb-1.5">
-                <span>Step {currentIdx + 1} of {profileSteps.length}</span>
+                <span>
+                  Step {currentIdx + 1} of {profileSteps.length}
+                </span>
                 <span>{progressPct}%</span>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -319,28 +404,41 @@ export default function ProfileSetupPage() {
                 transition={{ duration: 0.22, ease: "easeInOut" }}
                 className="px-6 py-7 space-y-5"
               >
-
                 {/* ── NAME ──────────────────────────────────────────────── */}
                 {step === "name" && (
                   <>
                     <div className="text-center space-y-1">
                       <div className="text-4xl mb-2">👋</div>
-                      <h2 className="font-display text-2xl font-semibold text-foreground">What's your name?</h2>
-                      <p className="text-sm text-muted-foreground">We'll personalise your experience</p>
+                      <h2 className="font-display text-2xl font-semibold text-foreground">
+                        What's your name?
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        We'll personalise your experience
+                      </p>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="name" className="font-body text-sm font-medium">Your name</Label>
+                      <Label
+                        htmlFor="name"
+                        className="font-body text-sm font-medium"
+                      >
+                        Your name
+                      </Label>
                       <Input
                         id="name"
                         placeholder="e.g. Priya"
                         value={form.displayName}
                         autoFocus
-                        onChange={(e) => setField("displayName", e.target.value)}
+                        onChange={(e) =>
+                          setField("displayName", e.target.value)
+                        }
                         className="rounded-xl"
                       />
                       <FieldError msg={errors.displayName} />
                     </div>
-                    <Button onClick={() => advance(() => validateName(form))} className="w-full rounded-xl font-semibold">
+                    <Button
+                      onClick={() => advance(() => validateName(form))}
+                      className="w-full rounded-xl font-semibold"
+                    >
                       Continue
                     </Button>
                   </>
@@ -351,18 +449,42 @@ export default function ProfileSetupPage() {
                   <>
                     <div className="text-center space-y-1">
                       <div className="text-4xl mb-2">📏</div>
-                      <h2 className="font-display text-2xl font-semibold text-foreground">About you</h2>
-                      <p className="text-sm text-muted-foreground">Helps us tailor your plans to your body</p>
+                      <h2 className="font-display text-2xl font-semibold text-foreground">
+                        About you
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Helps us tailor your plans to your body
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
                       {[
-                        { id: "age", label: "Age", placeholder: "25", key: "age" as const },
-                        { id: "height", label: "Height (cm)", placeholder: "160", key: "heightCm" as const },
-                        { id: "weight", label: "Weight (kg)", placeholder: "60", key: "weightKg" as const },
+                        {
+                          id: "age",
+                          label: "Age",
+                          placeholder: "25",
+                          key: "age" as const,
+                        },
+                        {
+                          id: "height",
+                          label: "Height (cm)",
+                          placeholder: "160",
+                          key: "heightCm" as const,
+                        },
+                        {
+                          id: "weight",
+                          label: "Weight (kg)",
+                          placeholder: "60",
+                          key: "weightKg" as const,
+                        },
                       ].map(({ id, label, placeholder, key }) => (
                         <div key={id} className="space-y-1.5">
-                          <Label htmlFor={id} className="text-xs font-body font-medium">{label}</Label>
+                          <Label
+                            htmlFor={id}
+                            className="text-xs font-body font-medium"
+                          >
+                            {label}
+                          </Label>
                           <Input
                             id={id}
                             type="number"
@@ -378,7 +500,9 @@ export default function ProfileSetupPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-body font-medium">Fitness level</Label>
+                      <Label className="text-sm font-body font-medium">
+                        Fitness level
+                      </Label>
                       <div className="grid grid-cols-3 gap-2">
                         {ORDERED_LEVELS.map((lvl) => (
                           <button
@@ -400,8 +524,19 @@ export default function ProfileSetupPage() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={retreat} className="flex-1 rounded-xl">Back</Button>
-                      <Button onClick={() => advance(() => validateMetrics(form))} className="flex-1 rounded-xl font-semibold">Continue</Button>
+                      <Button
+                        variant="outline"
+                        onClick={retreat}
+                        className="flex-1 rounded-xl"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => advance(() => validateMetrics(form))}
+                        className="flex-1 rounded-xl font-semibold"
+                      >
+                        Continue
+                      </Button>
                     </div>
                   </>
                 )}
@@ -411,8 +546,12 @@ export default function ProfileSetupPage() {
                   <>
                     <div className="text-center space-y-1">
                       <div className="text-4xl mb-2">🎯</div>
-                      <h2 className="font-display text-2xl font-semibold text-foreground">Your main goal</h2>
-                      <p className="text-sm text-muted-foreground">What are you working towards?</p>
+                      <h2 className="font-display text-2xl font-semibold text-foreground">
+                        Your main goal
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        What are you working towards?
+                      </p>
                     </div>
 
                     <div className="space-y-2.5">
@@ -426,21 +565,40 @@ export default function ProfileSetupPage() {
                             onClick={() => setField("fitnessGoal", goal)}
                             className={cn(
                               "w-full flex items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-all duration-150",
-                              selected ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/40",
+                              selected
+                                ? "border-primary bg-primary/5"
+                                : "border-border bg-card hover:border-primary/40",
                             )}
                           >
                             <span className="text-2xl">{icon}</span>
                             <div className="flex-1">
-                              <p className={cn("font-body font-semibold text-sm", selected ? "text-primary" : "text-foreground")}>
+                              <p
+                                className={cn(
+                                  "font-body font-semibold text-sm",
+                                  selected ? "text-primary" : "text-foreground",
+                                )}
+                              >
                                 {FITNESS_GOAL_LABELS[goal]}
                               </p>
-                              <p className="text-xs text-muted-foreground">{desc}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {desc}
+                              </p>
                             </div>
                             {selected && (
                               <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                                <svg viewBox="0 0 24 24" className="w-3 h-3 text-primary-foreground" fill="none">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="w-3 h-3 text-primary-foreground"
+                                  fill="none"
+                                >
                                   <title>Selected</title>
-                                  <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  <path
+                                    d="M5 13l4 4L19 7"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
                                 </svg>
                               </div>
                             )}
@@ -451,8 +609,19 @@ export default function ProfileSetupPage() {
                     <FieldError msg={errors.fitnessGoal} />
 
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={retreat} className="flex-1 rounded-xl">Back</Button>
-                      <Button onClick={() => advance(() => validateGoals(form))} className="flex-1 rounded-xl font-semibold">Continue</Button>
+                      <Button
+                        variant="outline"
+                        onClick={retreat}
+                        className="flex-1 rounded-xl"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => advance(() => validateGoals(form))}
+                        className="flex-1 rounded-xl font-semibold"
+                      >
+                        Continue
+                      </Button>
                     </div>
                   </>
                 )}
@@ -462,19 +631,31 @@ export default function ProfileSetupPage() {
                   <>
                     <div className="text-center space-y-1">
                       <div className="text-4xl mb-2">🥗</div>
-                      <h2 className="font-display text-2xl font-semibold text-foreground">Dietary preferences</h2>
-                      <p className="text-sm text-muted-foreground">Select all that apply</p>
+                      <h2 className="font-display text-2xl font-semibold text-foreground">
+                        Dietary preferences
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Select all that apply
+                      </p>
                     </div>
 
                     <div className="space-y-2">
                       {ORDERED_DIETS.map((pref) => {
-                        const blocked = pref !== DietaryPreference.none && form.dietPrefs.includes(DietaryPreference.none);
+                        const blocked =
+                          pref !== DietaryPreference.none &&
+                          form.dietPrefs.includes(DietaryPreference.none);
                         return (
                           <CheckCard
                             key={pref}
                             selected={form.dietPrefs.includes(pref)}
                             disabled={blocked}
-                            onClick={() => toggleList("dietPrefs", pref, DietaryPreference.none)}
+                            onClick={() =>
+                              toggleList(
+                                "dietPrefs",
+                                pref,
+                                DietaryPreference.none,
+                              )
+                            }
                           >
                             {DIET_PREF_LABELS[pref]}
                           </CheckCard>
@@ -483,8 +664,14 @@ export default function ProfileSetupPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="allergies" className="text-sm font-body font-medium">
-                        Allergies <span className="text-muted-foreground font-normal">(optional, comma-separated)</span>
+                      <Label
+                        htmlFor="allergies"
+                        className="text-sm font-body font-medium"
+                      >
+                        Allergies{" "}
+                        <span className="text-muted-foreground font-normal">
+                          (optional, comma-separated)
+                        </span>
                       </Label>
                       <Input
                         id="allergies"
@@ -496,8 +683,19 @@ export default function ProfileSetupPage() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={retreat} className="flex-1 rounded-xl">Back</Button>
-                      <Button onClick={() => advance()} className="flex-1 rounded-xl font-semibold">Continue</Button>
+                      <Button
+                        variant="outline"
+                        onClick={retreat}
+                        className="flex-1 rounded-xl"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => advance()}
+                        className="flex-1 rounded-xl font-semibold"
+                      >
+                        Continue
+                      </Button>
                     </div>
                   </>
                 )}
@@ -507,7 +705,9 @@ export default function ProfileSetupPage() {
                   <>
                     <div className="text-center space-y-1">
                       <div className="text-4xl mb-2">🩺</div>
-                      <h2 className="font-display text-2xl font-semibold text-foreground">Health conditions</h2>
+                      <h2 className="font-display text-2xl font-semibold text-foreground">
+                        Health conditions
+                      </h2>
                       <p className="text-sm text-muted-foreground">
                         Optional — helps us tailor safer plans for you
                       </p>
@@ -527,14 +727,26 @@ export default function ProfileSetupPage() {
 
                     {form.healthConditions.length > 0 && (
                       <p className="text-xs text-muted-foreground bg-muted/60 rounded-lg px-3 py-2 font-body">
-                        🌸 Your plans will be adapted with your health in mind. Always consult your doctor.
+                        🌸 Your plans will be adapted with your health in mind.
+                        Always consult your doctor.
                       </p>
                     )}
 
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={retreat} className="flex-1 rounded-xl">Back</Button>
-                      <Button onClick={() => advance()} className="flex-1 rounded-xl font-semibold">
-                        {form.healthConditions.length === 0 ? "Skip" : "Continue"}
+                      <Button
+                        variant="outline"
+                        onClick={retreat}
+                        className="flex-1 rounded-xl"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => advance()}
+                        className="flex-1 rounded-xl font-semibold"
+                      >
+                        {form.healthConditions.length === 0
+                          ? "Skip"
+                          : "Continue"}
                       </Button>
                     </div>
                   </>
@@ -545,19 +757,30 @@ export default function ProfileSetupPage() {
                   <>
                     <div className="text-center space-y-1">
                       <div className="text-4xl mb-2">🌙</div>
-                      <h2 className="font-display text-2xl font-semibold text-foreground">Your cycle</h2>
-                      <p className="text-sm text-muted-foreground">Personalises workouts & meals to each phase</p>
+                      <h2 className="font-display text-2xl font-semibold text-foreground">
+                        Your cycle
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Personalises workouts & meals to each phase
+                      </p>
                     </div>
 
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor="cycleStart" className="text-sm font-body font-medium">Last period start date</Label>
+                        <Label
+                          htmlFor="cycleStart"
+                          className="text-sm font-body font-medium"
+                        >
+                          Last period start date
+                        </Label>
                         <Input
                           id="cycleStart"
                           type="date"
                           max={new Date().toISOString().split("T")[0]}
                           value={form.cycleStartDate}
-                          onChange={(e) => setField("cycleStartDate", e.target.value)}
+                          onChange={(e) =>
+                            setField("cycleStartDate", e.target.value)
+                          }
                           className="rounded-xl"
                         />
                         <FieldError msg={errors.cycleStartDate} />
@@ -565,7 +788,12 @@ export default function ProfileSetupPage() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label htmlFor="cycleLen" className="text-sm font-body font-medium">Cycle length (days)</Label>
+                          <Label
+                            htmlFor="cycleLen"
+                            className="text-sm font-body font-medium"
+                          >
+                            Cycle length (days)
+                          </Label>
                           <Input
                             id="cycleLen"
                             type="number"
@@ -574,13 +802,20 @@ export default function ProfileSetupPage() {
                             min={21}
                             max={35}
                             value={form.cycleLengthDays}
-                            onChange={(e) => setField("cycleLengthDays", e.target.value)}
+                            onChange={(e) =>
+                              setField("cycleLengthDays", e.target.value)
+                            }
                             className="rounded-xl text-center"
                           />
                           <FieldError msg={errors.cycleLengthDays} />
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor="periodDur" className="text-sm font-body font-medium">Period duration (days)</Label>
+                          <Label
+                            htmlFor="periodDur"
+                            className="text-sm font-body font-medium"
+                          >
+                            Period duration (days)
+                          </Label>
                           <Input
                             id="periodDur"
                             type="number"
@@ -589,7 +824,9 @@ export default function ProfileSetupPage() {
                             min={1}
                             max={10}
                             value={form.periodDurationDays}
-                            onChange={(e) => setField("periodDurationDays", e.target.value)}
+                            onChange={(e) =>
+                              setField("periodDurationDays", e.target.value)
+                            }
                             className="rounded-xl text-center"
                           />
                           <FieldError msg={errors.periodDurationDays} />
@@ -597,34 +834,56 @@ export default function ProfileSetupPage() {
                       </div>
 
                       {/* Live cycle day preview */}
-                      {form.cycleStartDate && !errors.cycleStartDate && (() => {
-                        const [y, m, d] = form.cycleStartDate.split("-");
-                        const start = new Date(Date.UTC(+y, +m - 1, +d));
-                        const dayDiff = Math.floor((Date.now() - start.getTime()) / 86400000) + 1;
-                        const len = Number.parseInt(form.cycleLengthDays, 10) || 28;
-                        const cycleDay = ((dayDiff - 1) % len) + 1;
-                        if (cycleDay > 0)
-                          return (
-                            <div className="rounded-xl bg-primary/8 border border-primary/20 px-4 py-3 text-center">
-                              <p className="text-xs text-muted-foreground mb-0.5">Based on your input</p>
-                              <p className="text-sm font-body font-semibold text-primary">You're on cycle day {cycleDay} 🌙</p>
-                            </div>
-                          );
-                      })()}
+                      {form.cycleStartDate &&
+                        !errors.cycleStartDate &&
+                        (() => {
+                          const [y, m, d] = form.cycleStartDate.split("-");
+                          const start = new Date(Date.UTC(+y, +m - 1, +d));
+                          const dayDiff =
+                            Math.floor(
+                              (Date.now() - start.getTime()) / 86400000,
+                            ) + 1;
+                          const len =
+                            Number.parseInt(form.cycleLengthDays, 10) || 28;
+                          const cycleDay = ((dayDiff - 1) % len) + 1;
+                          if (cycleDay > 0)
+                            return (
+                              <div className="rounded-xl bg-primary/8 border border-primary/20 px-4 py-3 text-center">
+                                <p className="text-xs text-muted-foreground mb-0.5">
+                                  Based on your input
+                                </p>
+                                <p className="text-sm font-body font-semibold text-primary">
+                                  You're on cycle day {cycleDay} 🌙
+                                </p>
+                              </div>
+                            );
+                        })()}
 
                       <div className="rounded-xl bg-muted/60 border border-border px-4 py-3 text-xs text-muted-foreground font-body">
-                        🌸 Your phase is calculated automatically. Update anytime in Profile.
+                        🌸 Your phase is calculated automatically. Update
+                        anytime in Profile.
                       </div>
                     </div>
 
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={retreat} disabled={isSubmitting} className="flex-1 rounded-xl">Back</Button>
+                      <Button
+                        variant="outline"
+                        onClick={retreat}
+                        disabled={isSubmitting}
+                        className="flex-1 rounded-xl"
+                      >
+                        Back
+                      </Button>
                       <Button
                         onClick={handleFinish}
                         disabled={isSubmitting || !isActorReady}
                         className="flex-1 rounded-xl font-semibold shadow-sm"
                       >
-                        {isSubmitting ? "Setting up…" : !isActorReady ? "Connecting…" : "Finish 🎉"}
+                        {isSubmitting
+                          ? "Setting up…"
+                          : !isActorReady
+                            ? "Connecting…"
+                            : "Finish 🎉"}
                       </Button>
                     </div>
                   </>
@@ -636,7 +895,11 @@ export default function ProfileSetupPage() {
                     <motion.div
                       initial={{ scale: 0, rotate: -20 }}
                       animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 12 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 200,
+                        damping: 12,
+                      }}
                       className="text-7xl"
                     >
                       🌸
@@ -644,10 +907,11 @@ export default function ProfileSetupPage() {
                     <h2 className="font-display text-2xl font-semibold text-foreground">
                       You're all set, {form.displayName || "beautiful"}!
                     </h2>
-                    <p className="text-sm text-muted-foreground">Taking you to your dashboard…</p>
+                    <p className="text-sm text-muted-foreground">
+                      Taking you to your dashboard…
+                    </p>
                   </div>
                 )}
-
               </motion.div>
             </AnimatePresence>
           </div>
