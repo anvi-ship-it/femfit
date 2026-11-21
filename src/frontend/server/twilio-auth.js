@@ -56,9 +56,20 @@ function normalizePhone(value) {
   return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : null;
 }
 
+const DEMO_PHONE = "+919876543210";
+const DEMO_CODE = "123456";
+
+function isDevelopmentDemoLogin(phone) {
+  return process.env.NODE_ENV !== "production" && phone === DEMO_PHONE;
+}
+
 function getSessionSecret() {
   const secret = process.env.AUTH_SESSION_SECRET;
-  return typeof secret === "string" && secret.length >= 32 ? secret : null;
+  if (typeof secret === "string" && secret.length >= 32) return secret;
+  if (process.env.NODE_ENV !== "production") {
+    return "femfit-local-development-session-secret-not-for-production";
+  }
+  return null;
 }
 
 function signatureFor(payload, secret) {
@@ -194,6 +205,11 @@ export async function requestCode(request, response) {
     });
     return;
   }
+  if (isDevelopmentDemoLogin(phone)) {
+    json(response, 200, { sent: true, demo: true });
+    return;
+  }
+
   if (!rateLimitPhone(phone)) {
     json(response, 429, {
       error: "Too many code requests. Please wait before trying again.",
@@ -247,6 +263,16 @@ export async function verifyCode(request, response) {
   const secret = getSessionSecret();
   if (!secret) {
     json(response, 503, { error: "Authentication is not configured yet." });
+    return;
+  }
+
+  if (isDevelopmentDemoLogin(phone)) {
+    if (code !== DEMO_CODE) {
+      json(response, 400, { error: "That code is incorrect. Try again." });
+      return;
+    }
+    setSessionCookie(response, createSession(phone, secret));
+    json(response, 200, { authenticated: true, phone });
     return;
   }
 

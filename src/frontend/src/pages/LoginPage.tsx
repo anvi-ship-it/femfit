@@ -315,6 +315,11 @@ function SignUpForm({
             <PrimaryButton onClick={handleSendOtp} loading={loading}>
               Send verification code
             </PrimaryButton>
+            {import.meta.env.DEV && (
+              <p className="text-center text-xs text-muted-foreground">
+                Development demo: +91 9876543210 · OTP 123456
+              </p>
+            )}
             <p className="text-center text-xs text-muted-foreground">
               <span className="text-primary font-medium">7-day free trial</span>{" "}
               — no card required.
