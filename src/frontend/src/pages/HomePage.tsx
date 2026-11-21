@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { Link } from "@tanstack/react-router";
 import {
   CheckCircle2,
@@ -82,6 +83,7 @@ function SkeletonCard({ lines = 3 }: { lines?: number }) {
 }
 
 export default function HomePage() {
+  const { identity } = useInternetIdentity();
   const today = todayDateStr();
 
   const { data: cycleInfo, isLoading: cycleLoading } = useCycleInfo();
@@ -99,8 +101,11 @@ export default function HomePage() {
 
   const { data: profile } = useOnboardingProfile();
 
+  const principalShort =
+    identity?.getPrincipal()?.toString()?.slice(0, 5) ?? "there";
+
   const displayName = profile?.displayName?.trim();
-  const greetingName = displayName || "there";
+  const greetingName = displayName || principalShort;
 
   const waterMl = Number(dailyLog?.waterMl ?? 0n);
   const waterPct = Math.min((waterMl / WATER_GOAL_ML) * 100, 100);
