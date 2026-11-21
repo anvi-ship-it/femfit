@@ -2,12 +2,6 @@ import { fileURLToPath, URL } from "url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import environment from "vite-plugin-environment";
-import {
-  deleteSession,
-  getSession,
-  requestCode,
-  verifyCode,
-} from "./server/twilio-auth.js";
 
 const ii_url =
   process.env.DFX_NETWORK === "local"
@@ -35,13 +29,8 @@ export default defineConfig({
       },
     },
   },
-    server: {
-allowedHosts: [
-  "localhost",
-  "127.0.0.1",
-  ".v0.build",
-  "sb-cd12d5ctau8r.vercel.run"
-],
+  server: {
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: "http://127.0.0.1:4943",
@@ -54,17 +43,6 @@ allowedHosts: [
     environment("all", { prefix: "DFX_" }),
     environment(["II_URL"]),
     environment(["STORAGE_GATEWAY_URL"]),
-    {
-      name: "twilio-auth-dev-api",
-      configureServer(server) {
-        server.middlewares.use("/api/auth/request-code", requestCode);
-        server.middlewares.use("/api/auth/verify-code", verifyCode);
-        server.middlewares.use("/api/auth/session", (request, response) => {
-          if (request.method === "DELETE") return deleteSession(request, response);
-          return getSession(request, response);
-        });
-      },
-    },
     react(),
   ],
   resolve: {

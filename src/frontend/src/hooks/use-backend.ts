@@ -12,25 +12,11 @@ import type {
   SubscriptionTier,
   WorkoutTemplate,
 } from "../types";
-import { useAuthSession } from "./use-auth-session";
-
-function useConfiguredBackendActor() {
-  return useActor(createActor);
-}
-
-const useConfiguredBackendActorWhenAvailable = MOCK_MODE
-  ? () => ({ actor: null, isFetching: false })
-  : useConfiguredBackendActor;
 
 export function useBackendActor() {
-  const { session } = useAuthSession();
-  const configuredBackend = useConfiguredBackendActorWhenAvailable();
-
-  if (MOCK_MODE || session?.demo) {
-    return { actor: mockBackend, isFetching: false };
-  }
-
-  return configuredBackend;
+  const real = useActor(createActor);
+  if (MOCK_MODE) return { actor: mockBackend, isFetching: false };
+  return real;
 }
 
 export function useOnboardingProfile() {

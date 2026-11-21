@@ -1,5 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
+import { MOCK_MODE } from "./lib/mock-mode";
+import { isLocallyAuthenticated, isProfileComplete } from "./lib/local-auth";
 import {
   RouterProvider,
   createRootRoute,
@@ -8,9 +11,8 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { type ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 import Layout from "./components/Layout";
-import { useAuthSession } from "./hooks/use-auth-session";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
@@ -20,15 +22,25 @@ import ProfileSetupPage from "./pages/ProfileSetupPage";
 import ProgressPage from "./pages/ProgressPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 
-function SessionGate({ children }: { children: ReactNode }) {
-  const { session, isLoading } = useAuthSession();
+/** Wraps all protected routes — redirects to /login if not authenticated */
+function AuthLayout() {
+  const { isAuthenticated, isInitializing } = useInternetIdentity();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !session?.authenticated) navigate({ to: "/login" });
-  }, [isLoading, navigate, session?.authenticated]);
+    if (MOCK_MODE) {
+      // In mock mode, use localStorage auth
+      if (!isLocallyAuthenticated()) {
+        navigate({ to: "/login" });
+      }
+      return;
+    }
+    if (!isInitializing && !isAuthenticated) {
+      navigate({ to: "/login" });
+    }
+  }, [isAuthenticated, isInitializing, navigate]);
 
-  if (isLoading) {
+  if (!MOCK_MODE && isInitializing) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="space-y-3 w-48">
@@ -40,24 +52,10 @@ function SessionGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return session?.authenticated ? <>{children}</> : null;
-}
+  if (!MOCK_MODE && !isAuthenticated) return null;
+  if (MOCK_MODE && !isLocallyAuthenticated()) return null;
 
-/** Wraps all protected routes — redirects to /login if not authenticated */
-function AuthLayout() {
-  return (
-    <SessionGate>
-      <Layout />
-    </SessionGate>
-  );
-}
-
-function ProtectedProfileSetup() {
-  return (
-    <SessionGate>
-      <ProfileSetupPage />
-    </SessionGate>
-  );
+  return <Layout />;
 }
 
 const rootRoute = createRootRoute();
@@ -73,7 +71,7 @@ const loginRoute = createRoute({
 const profileSetupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/profile-setup",
-  component: ProtectedProfileSetup,
+  component: ProfileSetupPage,
 });
 
 // ─── Protected routes ─────────────────────────────────────────────────────────
@@ -87,9 +85,7 @@ const authLayoutRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: "/home" });
-  },
+  beforeLoad: () => { throw redirect({ to: "/home" }); },
   component: () => null,
 });
 
@@ -146,9 +142,7 @@ const routeTree = rootRoute.addChildren([
 const router = createRouter({ routeTree });
 
 declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
+  interface Register { router: typeof router; }
 }
 
 export default function App() {
